@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-const genAI = new GoogleGenerativeAI("");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function getGeminiResponse(prompt: string) {
   const enhancedPrompt = `As a friendly insurance expert, provide a clear response following this EXACT format:
