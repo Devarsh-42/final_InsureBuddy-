@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ShieldCheck } from 'lucide-react';
+import React from 'react';
 
 const languages = [
   { name: 'English', code: 'en' },
@@ -32,6 +33,21 @@ const languages = [
   { name: 'Tamil', code: 'ta' },
   { name: 'Bengali', code: 'bn' },
 ];
+
+// Helper to parse Gemini response into sections
+function parseGeminiResponse(response: string) {
+  const sections: Record<string, string> = {};
+  const regex = /([💡🔍💰🌟][^\n]*)/g;
+  const matches = response.split(regex).filter(Boolean);
+  for (let i = 0; i < matches.length; i += 2) {
+    const title = matches[i].trim();
+    const content = (matches[i + 1] || '').trim();
+    if (title && content) {
+      sections[title] = content;
+    }
+  }
+  return sections;
+}
 
 const ChatWidget = () => {
   const { messages, addMessage, isLoading } = useChat();
@@ -198,19 +214,51 @@ const ChatWidget = () => {
                           : 'bg-muted'
                       }`}
                     >
-                      <p className="text-sm">{message.content}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          message.isUser
-                            ? 'text-primary-foreground/70'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
+                      {message.isUser ? (
+                        <>
+                          <p className="text-sm">{message.content}</p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              message.isUser
+                                ? 'text-primary-foreground/70'
+                                : 'text-muted-foreground'
+                            }`}
+                          >
+                            {message.timestamp.toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </>
+                      ) : (
+                        // Render Gemini response in sections
+                        (() => {
+                          const sections = parseGeminiResponse(message.content);
+                          const hasSections = Object.keys(sections).length > 0;
+                          if (!hasSections) {
+                            return <p className="text-sm">{message.content}</p>;
+                          }
+                          return (
+                            <div className="gemini-response">
+                              {Object.entries(sections).map(([title, content]) => (
+                                <div
+                                  key={title}
+                                  className="section-block mb-4 p-3 rounded-lg bg-blue-50 border-l-4 border-blue-400"
+                                >
+                                  <div className="font-semibold text-blue-700 mb-1">{title}</div>
+                                  <div className="text-sm whitespace-pre-line text-gray-800">{content}</div>
+                                </div>
+                              ))}
+                              <p className="text-xs mt-1 text-muted-foreground">
+                                {message.timestamp.toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </p>
+                            </div>
+                          );
+                        })()
+                      )}
                     </div>
                   </div>
                 ))}
